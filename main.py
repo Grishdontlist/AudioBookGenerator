@@ -18,26 +18,22 @@ class AudioBookGenerator:
         self.reading_thread = None
 
     def clean_text(self, text):
-        # Remove multiple spaces
+        # clean_text
         text = re.sub(r"\s+", " ", text)
-        # Add small pause after punctuation for clarity
         text = re.sub(r"([.!?])", r"\1. ", text)
-        # Remove unnecessary symbols
         text = re.sub(r"[*_~]", "", text)
-        # Ensure proper spacing around quotes
         text = re.sub(r'"(\w)', r'" \1', text)
-        # Handle common abbreviations to improve pronunciation
         text = text.replace("Mr.", "Mister")
         text = text.replace("Mrs.", "Misses")
         text = text.replace("Dr.", "Doctor")
         return text.strip()
 
     def create_gui(self):
+        # create_gui
         self.root = tk.Tk()
         self.root.title("AudioBook Generator")
         self.root.geometry("560x420")
 
-        # Voice selection
         frame = ttk.LabelFrame(self.root, text="Voice Settings", padding="10")
         frame.pack(fill="x", padx=10, pady=5)
 
@@ -55,6 +51,7 @@ class AudioBookGenerator:
         if voices:
             self.voice_var.set("0")
 
+        
         # Speed control
         speed_frame = ttk.LabelFrame(self.root, text="Reading Speed", padding="10")
         speed_frame.pack(fill="x", padx=10, pady=5)
@@ -65,6 +62,7 @@ class AudioBookGenerator:
         )
         speed_scale.pack(fill="x")
 
+        
         # Controls
         control_frame = ttk.Frame(self.root, padding="10")
         control_frame.pack(fill="x", padx=10, pady=5)
@@ -82,6 +80,7 @@ class AudioBookGenerator:
             side="left", padx=5
         )
 
+        
         # Jump to page controls
         ttk.Label(control_frame, text="Go to page:").pack(side="left", padx=(10, 2))
         self.goto_var = tk.StringVar()
@@ -90,6 +89,7 @@ class AudioBookGenerator:
         )
         ttk.Button(control_frame, text="Go", command=self.goto_page).pack(side="left", padx=5)
 
+        
         # Progress
         self.progress_var = tk.StringVar(value="Ready to start...")
         ttk.Label(self.root, textvariable=self.progress_var).pack(pady=10)
@@ -101,6 +101,7 @@ class AudioBookGenerator:
         self.root.mainloop()
 
     def select_pdf(self):
+        # select_pdf
         self.book_path = askopenfilename(
             title="Select PDF File", filetypes=[("PDF files", "*.pdf")]
         )
@@ -114,10 +115,12 @@ class AudioBookGenerator:
                 messagebox.showerror("Error", f"Error loading PDF: {str(e)}")
 
     def start_reading(self):
+        # start_reading
         if not hasattr(self, "book_path"):
             messagebox.showinfo("Info", "Please select a PDF file first")
             return
 
+        
         # Configure engine with selected settings
         try:
             voice_index = int(self.voice_var.get())
@@ -128,10 +131,12 @@ class AudioBookGenerator:
             self.engine.setProperty("voice", voices[voice_index].id)
         self.engine.setProperty("rate", self.speed_var.get())
 
+        
         # Reset flags
         self.is_stopped = False
         self.is_paused = False
 
+        
         # Start reading in a separate thread
         t = Thread(target=self.read_book)
         t.daemon = True
@@ -139,6 +144,7 @@ class AudioBookGenerator:
         t.start()
 
     def read_book(self):
+        # read_book
         try:
             for num in range(self.current_page, self.total_pages):
                 if self.is_stopped:
@@ -152,10 +158,8 @@ class AudioBookGenerator:
                 page = self.pdfreader.pages[num]
                 text = page.extract_text() or ""
                 if text.strip():
-                    # Clean and preprocess text
                     text = self.clean_text(text)
 
-                    # Update progress
                     self.current_page = num
                     self.progress_var.set(
                         f"Reading page {num + 1} of {self.total_pages}"
@@ -166,7 +170,6 @@ class AudioBookGenerator:
                     except Exception:
                         pass
 
-                    # Read the text
                     self.engine.say(text)
                     self.engine.runAndWait()
 
@@ -179,7 +182,7 @@ class AudioBookGenerator:
             self.reading_thread = None
 
     def goto_page(self):
-        # Jump to a specific page number (1-based)
+        # goto_page
         if not hasattr(self, "book_path"):
             messagebox.showinfo("Info", "Please select a PDF file first")
             return
@@ -196,6 +199,7 @@ class AudioBookGenerator:
             )
             return
 
+        
         # Stop current reading and interrupt speech
         self.is_stopped = True
         self.is_paused = False
@@ -204,9 +208,11 @@ class AudioBookGenerator:
         except Exception:
             pass
 
+        
         # Give the reader loop a short moment to exit
         time.sleep(0.05)
 
+        
         # Set new page and restart reading
         self.current_page = page_num - 1
         self.progress_var.set(f"Jumped to page {page_num}")
@@ -220,11 +226,13 @@ class AudioBookGenerator:
         t.start()
 
     def pause_resume(self):
+        # pause_resume
         self.is_paused = not self.is_paused
         status = "Paused" if self.is_paused else "Resumed"
         self.progress_var.set(f"{status} at page {self.current_page + 1}")
 
     def stop_reading(self):
+        # stop_reading
         self.is_stopped = True
         self.is_paused = False
         self.current_page = 0
@@ -232,6 +240,7 @@ class AudioBookGenerator:
         self.progress_bar["value"] = 0
 
     def on_closing(self):
+        # on_closing
         self.is_stopped = True
         self.root.destroy()
 
